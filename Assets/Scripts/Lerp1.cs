@@ -5,37 +5,52 @@
     // https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Vector3.Lerp.html
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class Lerp1 : MonoBehaviour
 {
     GameObject[] spheres;
+    GameObject[] lines; 
     static int numSphere = 200; 
     float time = 0f;
     Vector3[] startPosition, endPosition;
-
+    public float control;
     // Start is called before the first frame update
     void Start()
     {
         // Assign proper types and sizes to the variables.
         spheres = new GameObject[numSphere];
+        lines = new GameObject[numSphere/2];
         startPosition = new Vector3[numSphere]; 
         endPosition = new Vector3[numSphere]; 
         
         // Define target positions. Start = random, End = heart 
-        for (int i =0; i < numSphere; i++){
+        for (int i = 0; i < numSphere; i++){
+            float sin = Mathf.Sin(i * 2 * Mathf.PI / numSphere);
+            float cos = Mathf.Cos(i * 2 * Mathf.PI / numSphere);
+
             // Random start positions
             float r = 10f;
             startPosition[i] = new Vector3(r * Random.Range(-1f, 1f), r * Random.Range(-1f, 1f), r * Random.Range(-1f, 1f));        
 
             r = 3f; // radius of the circle
             // Circular end position
-            endPosition[i] = new Vector3(r * Mathf.Sin(i * 2 * Mathf.PI / numSphere), r * Mathf.Cos(i * 2 * Mathf.PI / numSphere));
+            // endPosition[i] = new Vector3(r * Mathf.Sin(i * 2 * Mathf.PI / numSphere), r * Mathf.Cos(i * 2 * Mathf.PI / numSphere));
+
+            // Heart End position
+            endPosition[i] = new Vector3( r * ( Mathf.Sqrt(2f) * sin * sin * sin), r *( -(cos * cos * cos) - (cos * cos) + 2 * cos), 10f + Mathf.Sin(time * i) * 3f);
         }
         // Let there be spheres..
         for (int i =0; i < numSphere; i++){
             // Draw primitive elements:
             // https://docs.unity3d.com/6000.0/Documentation/ScriptReference/GameObject.CreatePrimitive.html
-            spheres[i] = GameObject.CreatePrimitive(PrimitiveType.Sphere); 
+            spheres[i] = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            
+            // add a line renderer to every other sphere
+            if(i % 2 == 0)
+            {
+                spheres[i].AddComponent<LineRenderer>();
+            }
 
             // Position
             spheres[i].transform.position = startPosition[i];
@@ -44,9 +59,11 @@ public class Lerp1 : MonoBehaviour
             Renderer sphereRenderer = spheres[i].GetComponent<Renderer>();
             // HSV color space: https://en.wikipedia.org/wiki/HSL_and_HSV
             float hue = (float)i / numSphere; // Hue cycles through 0 to 1
-            Color color = Color.HSVToRGB(hue, 1f, 1f); // Full saturation and brightness
+            Color color = Color.HSVToRGB(control, 1f, 1f); // Full saturation and brightness
             sphereRenderer.material.color = color;
         }
+
+        
     }
 
     // Update is called once per frame
@@ -71,8 +88,19 @@ public class Lerp1 : MonoBehaviour
             // Color Update over time
             Renderer sphereRenderer = spheres[i].GetComponent<Renderer>();
             float hue = (float)i / numSphere; // Hue cycles through 0 to 1
+            control = Mathf.Cos(time) * .1f + .1f;
             Color color = Color.HSVToRGB(Mathf.Abs(hue * Mathf.Sin(time)), Mathf.Cos(time), 2f + Mathf.Cos(time)); // Full saturation and brightness
             sphereRenderer.material.color = color;
+
+            if(i % 2 == 0)
+            {
+                LineRenderer render = spheres[i].GetComponent<LineRenderer>();
+                render.SetPosition(0, spheres[i].transform.position);
+                render.SetPosition(1, spheres[i + 1].transform.position);
+                render.material = sphereRenderer.material;
+            } 
+
         }
+        
     }
 }
